@@ -37,6 +37,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   web_socket_channel: ^2.3.0
   http: ^0.13.5
+  arrow_pad: ^0.1.5
 
 dev_dependencies:
   flutter_test:
