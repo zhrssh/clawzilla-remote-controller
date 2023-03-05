@@ -13,6 +13,17 @@ class RemoteController extends StatefulWidget {
 
 class _RemoteControllerState extends State<RemoteController> {
   late final WebSocketChannel? _channel = widget.channel;
+  double _sliderValue = 50;
+
+  // Send message to server
+  void send(String? message) {
+    if (kDebugMode) {
+      print("Sending '$message'");
+      return;
+    }
+
+    _channel?.sink.add(message);
+  }
 
   // Sets the orientation to landscape
   @override
@@ -23,138 +34,206 @@ class _RemoteControllerState extends State<RemoteController> {
   }
 
   @override
+  void dispose() {
+    if (kDebugMode) {
+      print("Ending websocket connection...");
+    }
+    _channel?.sink.close(null, "End connection");
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('ClawZilla connected...')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: Container(
-                width: 600,
-                height: 100,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.black54,
-                    style: BorderStyle.solid,
+      appBar: AppBar(
+        title: const Text('Controller connected.'),
+      ),
+      body: Row(
+        children: <Widget>[
+          Expanded(
+            child: Container(
+              color: Colors.grey[300],
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const SizedBox(
+                    height: 24,
                   ),
-                ),
-                child: StreamBuilder(
-                  stream: _channel?.stream, // TODO: Change ? to !
-                  builder: (context, snapshot) {
-                    return Text(snapshot.hasData ? '${snapshot.data}' : '');
-                  },
+                  const Text(
+                    'Movement Controls',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 24,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      GameButton(
+                        icon: Icons.arrow_upward,
+                        onLongPressDown: () {
+                          send("forward");
+                          if (kDebugMode) {
+                            print("Moving forward.");
+                          }
+                        },
+                        onLongPressEnd: () {
+                          send("stop");
+                          if (kDebugMode) {
+                            print("Stop.");
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        GameButton(
+                          icon: Icons.arrow_back,
+                          onLongPressDown: () {
+                            send("left");
+                            if (kDebugMode) {
+                              print("Moving left.");
+                            }
+                          },
+                          onLongPressEnd: () {
+                            send("stop");
+                            if (kDebugMode) {
+                              print("Stop.");
+                            }
+                          },
+                        ),
+                        const SizedBox(
+                          width: 100.0,
+                        ),
+                        GameButton(
+                          icon: Icons.arrow_forward,
+                          onLongPressDown: () {
+                            send("right");
+                            if (kDebugMode) {
+                              print("Moving right.");
+                            }
+                          },
+                          onLongPressEnd: () {
+                            send("stop");
+                            if (kDebugMode) {
+                              print("Stop.");
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      GameButton(
+                        icon: Icons.arrow_downward,
+                        onLongPressDown: () {
+                          send("backward");
+                          if (kDebugMode) {
+                            print("Moving backward.");
+                          }
+                        },
+                        onLongPressEnd: () {
+                          send("stop");
+                          if (kDebugMode) {
+                            print("Stop.");
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 24,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              color: Colors.grey[300],
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    const Text(
+                      'Claw Control',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20.0),
+                    Slider(
+                      min: 0,
+                      max: 100,
+                      value: _sliderValue,
+                      onChanged: (newValue) {
+                        setState(() {
+                          _sliderValue = newValue;
+
+                          send("claw/${_sliderValue.toInt()}");
+                          if (kDebugMode) {
+                            print(_sliderValue.toInt());
+                          }
+                        });
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Column(children: [
-                  GestureDetector(
-                    child: IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.arrow_upward_rounded),
-                    ),
-                    onLongPressDown: (details) {
-                      if (kDebugMode) {
-                        print(details.globalPosition);
-                      }
-                    },
-                    onLongPressEnd: (details) {
-                      if (kDebugMode) {
-                        print("Up button released.");
-                      }
-                    },
-                    onLongPressCancel: () {
-                      if (kDebugMode) {
-                        print("Up button cancelled.");
-                      }
-                    },
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  GestureDetector(
-                    child: IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.arrow_downward_rounded),
-                    ),
-                    onLongPressDown: (details) {
-                      if (kDebugMode) {
-                        print(details.globalPosition);
-                      }
-                    },
-                    onLongPressEnd: (details) {
-                      if (kDebugMode) {
-                        print("Down button released.");
-                      }
-                    },
-                    onLongPressCancel: () {
-                      if (kDebugMode) {
-                        print("Down button cancelled.");
-                      }
-                    },
-                  ),
-                ]),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                ),
-                GestureDetector(
-                  child: IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.arrow_back_rounded),
-                  ),
-                  onLongPressDown: (details) {
-                    if (kDebugMode) {
-                      print(details.globalPosition);
-                    }
-                  },
-                  onLongPressEnd: (details) {
-                    if (kDebugMode) {
-                      print("Left button released.");
-                    }
-                  },
-                  onLongPressCancel: () {
-                    if (kDebugMode) {
-                      print("Left button cancelled.");
-                    }
-                  },
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                ),
-                GestureDetector(
-                  child: IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.arrow_forward_rounded),
-                  ),
-                  onLongPressDown: (details) {
-                    if (kDebugMode) {
-                      print(details.globalPosition);
-                    }
-                  },
-                  onLongPressEnd: (details) {
-                    if (kDebugMode) {
-                      print("Right button released.");
-                    }
-                  },
-                  onLongPressCancel: () {
-                    if (kDebugMode) {
-                      print("Right button cancelled.");
-                    }
-                  },
-                ),
-              ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class GameButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onLongPressDown;
+  final VoidCallback onLongPressEnd;
+
+  const GameButton(
+      {super.key,
+      required this.icon,
+      required this.onLongPressDown,
+      required this.onLongPressEnd});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onLongPressDown: (_) => onLongPressDown.call(),
+      onLongPressEnd: (_) => onLongPressEnd.call(),
+      onLongPressCancel: onLongPressEnd,
+      child: Container(
+        width: 60.0,
+        height: 60.0,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 3),
             ),
           ],
+        ),
+        child: Icon(
+          icon,
+          size: 30.0,
         ),
       ),
     );

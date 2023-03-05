@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 
 // Routes
 import './views/remote_controller.dart';
@@ -36,31 +37,68 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   // For connecting to websocket
-  final _connController = TextEditingController();
+  void _connect(BuildContext context) {
+    NetworkInfo().getWifiGatewayIP().then((value) {
+      String url = "ws://$value/ws";
 
-  void _connect() {
-    String url = _connController.text;
+      // Show "connecting" dialog
+      showDialog(
+          barrierDismissible: false,
+          context: context,
+          builder: (_) {
+            return Dialog(
+              backgroundColor: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 15),
+                    Text(
+                      "Connecting",
+                      style: TextStyle(
+                        fontFamily: "arial",
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          });
 
-    // Clear text
-    _connController.clear();
+      // Connect to websocket (Debug)
+      if (kDebugMode) {
+        print(url);
+        Future.delayed(const Duration(seconds: 3)).then((value) {
+          Navigator.of(context).pop();
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const RemoteController(channel: null)));
+        });
+        return;
+      }
 
-    // Connect to websocket (Debug)
-    if (kDebugMode) {
-      print(url);
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => const RemoteController(channel: null)));
-      return;
-    }
+      // Connect to websocket
+      final channel = WebSocketChannel.connect(Uri.parse(url));
 
-    // Connect to websocket
-    final channel = WebSocketChannel.connect(Uri.parse(url));
-    channel.ready.then((_) {
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => RemoteController(channel: channel)));
+      channel.ready.then((_) {
+        Navigator.of(context).pop();
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => RemoteController(channel: channel)));
+      }).catchError((onError) {
+        Navigator.of(context).pop();
+        const snackBar = SnackBar(
+          content: Text("Error connecting to CLAWZILLA. Please try again."),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        return;
+      });
     });
   }
 
@@ -69,12 +107,12 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     SystemChrome.setPreferredOrientations(
-        [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+      [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight],
+    );
   }
 
   @override
   void dispose() {
-    _connController.dispose();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
@@ -91,45 +129,39 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Text(
-            'Connect to WebSocket',
-            style: TextStyle(
-              fontFamily: "arial bold",
-              fontSize: 24,
-            ),
-          ),
-          SizedBox(
-            width: 600,
-            child: TextFormField(
-              controller: _connController,
-              validator: (value) {
-                if (value == null) {
-                  return "Text Field can not be empty.";
-                } else {
-                  return "Connecting...";
-                }
-              },
-              decoration: const InputDecoration(
-                  labelText: "Type here the web socket link"),
-              style: const TextStyle(
-                fontFamily: "arial",
-                fontSize: 18,
-              ),
-            ),
-          ),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 4)),
-          ElevatedButton(
-            onPressed: _connect,
-            child: const Text(
-              "Connect",
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Connect to CLAWZILLA.',
               style: TextStyle(
                 fontFamily: "arial",
-                fontSize: 18,
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-        ]),
+            const Padding(padding: EdgeInsets.symmetric(vertical: 4)),
+            ElevatedButton(
+              style: const ButtonStyle(
+                alignment: Alignment.center,
+                padding: MaterialStatePropertyAll(
+                  EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 30,
+                  ),
+                ),
+              ),
+              onPressed: () => _connect(context),
+              child: const Text(
+                "Connect",
+                style: TextStyle(
+                  fontFamily: "arial",
+                  fontSize: 24,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
