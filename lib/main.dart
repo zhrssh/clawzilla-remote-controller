@@ -43,22 +43,42 @@ class _MyHomePageState extends State<MyHomePage> {
     // Connect to websocket
     final channel = WebSocketChannel.connect(Uri.parse(url));
 
+    // Show "connecting" dialog
+    showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (_) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 15),
+                  Text(
+                    "Connecting",
+                    style: TextStyle(
+                      fontFamily: "arial",
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+
     _connectTextController.clear();
     channel.ready.then(
-      (_) async {
-        Navigator.of(context).pop();
-
-        SystemChrome.setPreferredOrientations(
-          [
-            DeviceOrientation.landscapeLeft,
-            DeviceOrientation.landscapeRight,
-          ],
-        );
-
-        await Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => RemoteController(channel: channel)));
+      (_) {
+        Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => RemoteController(channel: channel)))
+            .then((value) => Navigator.of(context).pop());
+        return;
       },
       onError: (onError) {
         Navigator.of(context).pop();

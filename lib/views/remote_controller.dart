@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -34,9 +33,6 @@ class _RemoteControllerState extends State<RemoteController> {
 
   @override
   void dispose() {
-    if (kDebugMode) {
-      print("Ending websocket connection...");
-    }
     _channel?.sink.close(null, "End connection");
     super.dispose();
   }
@@ -77,15 +73,9 @@ class _RemoteControllerState extends State<RemoteController> {
                         icon: Icons.arrow_upward,
                         onLongPressDown: () {
                           send("forward");
-                          if (kDebugMode) {
-                            print("Moving forward.");
-                          }
                         },
                         onLongPressEnd: () {
                           send("stop");
-                          if (kDebugMode) {
-                            print("Stop.");
-                          }
                         },
                       ),
                     ],
@@ -98,15 +88,9 @@ class _RemoteControllerState extends State<RemoteController> {
                           icon: Icons.arrow_back,
                           onLongPressDown: () {
                             send("left");
-                            if (kDebugMode) {
-                              print("Moving left.");
-                            }
                           },
                           onLongPressEnd: () {
                             send("stop");
-                            if (kDebugMode) {
-                              print("Stop.");
-                            }
                           },
                         ),
                         const SizedBox(
@@ -116,15 +100,9 @@ class _RemoteControllerState extends State<RemoteController> {
                           icon: Icons.arrow_forward,
                           onLongPressDown: () {
                             send("right");
-                            if (kDebugMode) {
-                              print("Moving right.");
-                            }
                           },
                           onLongPressEnd: () {
                             send("stop");
-                            if (kDebugMode) {
-                              print("Stop.");
-                            }
                           },
                         ),
                       ],
@@ -137,15 +115,9 @@ class _RemoteControllerState extends State<RemoteController> {
                         icon: Icons.arrow_downward,
                         onLongPressDown: () {
                           send("backward");
-                          if (kDebugMode) {
-                            print("Moving backward.");
-                          }
                         },
                         onLongPressEnd: () {
                           send("stop");
-                          if (kDebugMode) {
-                            print("Stop.");
-                          }
                         },
                       ),
                     ],
@@ -182,9 +154,6 @@ class _RemoteControllerState extends State<RemoteController> {
                           _sliderValue = newValue;
 
                           send("claw/${_sliderValue.toInt()}");
-                          if (kDebugMode) {
-                            print(_sliderValue.toInt());
-                          }
                         });
                       },
                     ),
