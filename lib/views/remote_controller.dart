@@ -17,11 +17,6 @@ class _RemoteControllerState extends State<RemoteController> {
 
   // Send message to server
   void send(String? message) {
-    if (kDebugMode) {
-      print("Sending '$message'");
-      return;
-    }
-
     _channel?.sink.add(message);
   }
 
@@ -30,7 +25,11 @@ class _RemoteControllerState extends State<RemoteController> {
   void initState() {
     super.initState();
     SystemChrome.setPreferredOrientations(
-        [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+      [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ],
+    );
   }
 
   @override
@@ -45,6 +44,7 @@ class _RemoteControllerState extends State<RemoteController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Controller connected.'),
       ),

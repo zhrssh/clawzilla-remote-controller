@@ -1,8 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:network_info_plus/network_info_plus.dart';
 
 // Routes
 import './views/remote_controller.dart';
@@ -36,61 +34,33 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final _connectTextController = TextEditingController();
+
   // For connecting to websocket
   void _connect(BuildContext context) {
-    NetworkInfo().getWifiGatewayIP().then((value) {
-      String url = "ws://$value/ws";
+    String url = "ws://${_connectTextController.text}/ws";
 
-      // Show "connecting" dialog
-      showDialog(
-          barrierDismissible: false,
-          context: context,
-          builder: (_) {
-            return Dialog(
-              backgroundColor: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 15),
-                    Text(
-                      "Connecting",
-                      style: TextStyle(
-                        fontFamily: "arial",
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          });
+    // Connect to websocket
+    final channel = WebSocketChannel.connect(Uri.parse(url));
 
-      // Connect to websocket (Debug)
-      if (kDebugMode) {
-        print(url);
-        Future.delayed(const Duration(seconds: 3)).then((value) {
-          Navigator.of(context).pop();
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const RemoteController(channel: null)));
-        });
-        return;
-      }
-
-      // Connect to websocket
-      final channel = WebSocketChannel.connect(Uri.parse(url));
-
-      channel.ready.then((_) {
+    _connectTextController.clear();
+    channel.ready.then(
+      (_) async {
         Navigator.of(context).pop();
-        Navigator.push(
+
+        SystemChrome.setPreferredOrientations(
+          [
+            DeviceOrientation.landscapeLeft,
+            DeviceOrientation.landscapeRight,
+          ],
+        );
+
+        await Navigator.push(
             context,
             MaterialPageRoute(
                 builder: (context) => RemoteController(channel: channel)));
-      }).catchError((onError) {
+      },
+      onError: (onError) {
         Navigator.of(context).pop();
         const snackBar = SnackBar(
           content: Text("Error connecting to CLAWZILLA. Please try again."),
@@ -98,8 +68,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
         ScaffoldMessenger.of(context).showSnackBar(snackBar);
         return;
-      });
-    });
+      },
+    );
   }
 
   // Sets the orientation to landscape
@@ -107,12 +77,16 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     SystemChrome.setPreferredOrientations(
-      [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight],
+      [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ],
     );
   }
 
   @override
   void dispose() {
+    _connectTextController.dispose();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
@@ -125,40 +99,61 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(widget.title),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Connect to CLAWZILLA.',
-              style: TextStyle(
-                fontFamily: "arial",
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-              ),
+            const SizedBox(
+              height: 50,
             ),
-            const Padding(padding: EdgeInsets.symmetric(vertical: 4)),
-            ElevatedButton(
-              style: const ButtonStyle(
-                alignment: Alignment.center,
-                padding: MaterialStatePropertyAll(
-                  EdgeInsets.symmetric(
-                    vertical: 10,
-                    horizontal: 30,
-                  ),
-                ),
-              ),
-              onPressed: () => _connect(context),
-              child: const Text(
-                "Connect",
+            const Expanded(
+              child: Text(
+                'Connect to CLAWZILLA',
                 style: TextStyle(
                   fontFamily: "arial",
                   fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
+            ),
+            SizedBox(
+              height: 80,
+              width: 400,
+              child: TextFormField(
+                decoration: const InputDecoration(
+                  label: Text("Gateway IP Address"),
+                  hintText: "192.168.X.X",
+                ),
+                controller: _connectTextController,
+              ),
+            ),
+            Expanded(
+              child: ElevatedButton(
+                style: const ButtonStyle(
+                  alignment: Alignment.center,
+                  padding: MaterialStatePropertyAll(
+                    EdgeInsets.symmetric(
+                      horizontal: 30,
+                    ),
+                  ),
+                ),
+                onPressed: () => _connect(context),
+                child: const Text(
+                  "Connect",
+                  style: TextStyle(
+                    fontFamily: "arial",
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(
+              height: 50,
             ),
           ],
         ),
