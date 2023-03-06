@@ -12,7 +12,8 @@ class RemoteController extends StatefulWidget {
 
 class _RemoteControllerState extends State<RemoteController> {
   late final WebSocketChannel? _channel = widget.channel;
-  double _sliderValue = 50;
+  int _prevValue = 0;
+  double _sliderValue = 0;
 
   // Send message to server
   void send(String? message) {
@@ -145,17 +146,30 @@ class _RemoteControllerState extends State<RemoteController> {
                       ),
                     ),
                     const SizedBox(height: 20.0),
-                    Slider(
-                      min: 0,
-                      max: 100,
-                      value: _sliderValue,
-                      onChanged: (newValue) {
-                        setState(() {
-                          _sliderValue = newValue;
+                    StreamBuilder(
+                      initialData: "0",
+                      stream: _channel?.stream,
+                      builder: ((context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const CircularProgressIndicator();
+                        }
 
-                          send("claw/${_sliderValue.toInt()}");
-                        });
-                      },
+                        final double val = double.parse(snapshot.data);
+                        _sliderValue = val;
+
+                        return Slider(
+                          min: 0,
+                          max: 100,
+                          value: _sliderValue,
+                          onChanged: (newValue) {
+                            final int num = newValue.toInt();
+                            if (num != _prevValue) {
+                              send("claw/$num");
+                              _prevValue = num;
+                            }
+                          },
+                        );
+                      }),
                     ),
                   ],
                 ),

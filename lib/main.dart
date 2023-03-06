@@ -83,7 +83,7 @@ class _MyHomePageState extends State<MyHomePage> {
       onError: (onError) {
         Navigator.of(context).pop();
         const snackBar = SnackBar(
-          content: Text("Error connecting to CLAWZILLA. Please try again."),
+          content: Text("Error connecting to websocket. Please try again."),
         );
 
         ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -133,7 +133,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             const Expanded(
               child: Text(
-                'Connect to CLAWZILLA',
+                'Connect to CLAWZILLA websocket',
                 style: TextStyle(
                   fontFamily: "arial",
                   fontSize: 24,
@@ -146,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage> {
               width: 400,
               child: TextFormField(
                 decoration: const InputDecoration(
-                  label: Text("Gateway IP Address"),
+                  label: Text("IP Address"),
                   hintText: "192.168.X.X",
                 ),
                 controller: _connectTextController,
