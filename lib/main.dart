@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 
 // Routes
 import './views/remote_controller.dart';
@@ -16,6 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'ClawZilla',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -37,8 +39,8 @@ class _MyHomePageState extends State<MyHomePage> {
   final _connectTextController = TextEditingController();
 
   // For connecting to websocket
-  void _connect(BuildContext context) {
-    String url = "ws://${_connectTextController.text}/ws";
+  void _connect(BuildContext context, String? ip) {
+    String url = "ws://$ip/ws";
 
     // Connect to websocket
     final channel = WebSocketChannel.connect(Uri.parse(url));
@@ -60,7 +62,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   Text(
                     "Connecting",
                     style: TextStyle(
-                      fontFamily: "arial",
                       fontSize: 16,
                     ),
                   ),
@@ -125,20 +126,16 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             const SizedBox(
               height: 50,
             ),
-            const Expanded(
-              child: Text(
-                'Connect to CLAWZILLA websocket',
-                style: TextStyle(
-                  fontFamily: "arial",
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+            const Text(
+              'Connect to CLAWZILLA websocket',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
             ),
             SizedBox(
@@ -152,25 +149,51 @@ class _MyHomePageState extends State<MyHomePage> {
                 controller: _connectTextController,
               ),
             ),
-            Expanded(
-              child: ElevatedButton(
-                style: const ButtonStyle(
-                  alignment: Alignment.center,
-                  padding: MaterialStatePropertyAll(
-                    EdgeInsets.symmetric(
-                      horizontal: 30,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  style: const ButtonStyle(
+                    alignment: Alignment.center,
+                    padding: MaterialStatePropertyAll(
+                      EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 20,
+                      ),
+                    ),
+                  ),
+                  onPressed: () =>
+                      _connect(context, _connectTextController.text),
+                  child: const Text(
+                    "Connect",
+                    style: TextStyle(
+                      fontSize: 16,
                     ),
                   ),
                 ),
-                onPressed: () => _connect(context),
-                child: const Text(
-                  "Connect",
-                  style: TextStyle(
-                    fontFamily: "arial",
-                    fontSize: 16,
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                ),
+                ElevatedButton(
+                  style: const ButtonStyle(
+                    alignment: Alignment.center,
+                    padding: MaterialStatePropertyAll(
+                      EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 20,
+                      ),
+                    ),
+                  ),
+                  onPressed: () async =>
+                      _connect(context, await NetworkInfo().getWifiGatewayIP()),
+                  child: const Text(
+                    "Connect to Gateway",
+                    style: TextStyle(
+                      fontSize: 16,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
             const SizedBox(
               height: 50,
