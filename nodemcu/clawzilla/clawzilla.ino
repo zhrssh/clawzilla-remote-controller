@@ -1,23 +1,31 @@
 #include <Arduino.h>
+#include <ArduinoJson.h>
 
 // For Wireless Connection
 #include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 
+// AP config
 const char* ssid = "ClawZilla-AP";
 const char* password = "cpe103grp4";
 
+// ArduinoJson
+StaticJsonDocument<200> doc;
+
 // Pins
-const int ledPins[4] = { D0, D1, D2, D3 };
-const int clawPinLed = D4;
 
 // Create server
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
+// Variables
 unsigned long previousMillis = 0;
 const long interval = 10;
+int x = 0;
+int y = 0;
+int speedValue = 0;
+int clawValue = 0;
 
 // Handles incoming messages from clients
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
@@ -25,67 +33,44 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
   if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
     data[len] = 0;
     Serial.println((char*)data);
-    
+
     // This is where data is handled;
-    // Searches for '/'
-    char * s_ptr = strchr((char*)data, '/');
-    if (s_ptr != NULL) {
-      // Handle claw motion
-      int arr[3] = {};
-      for (int i = 1; i < 4; i++) {
+    const DeserializationError error = deserializeJson(doc, (char*)data);
 
-        // Checks if the next address is null
-        if (*(s_ptr + i) == 0) {
-          arr[i - 1] = '\0' + '0';
-          break;
-        }
-
-        arr[i - 1] = *(s_ptr + i) - '0';
-      }
-
-      // Converts int array to one integer number
-      int num = 0;
-      for (int i : arr) {
-        // break on termination
-        if (i == 48) break;
-        num = num * 10 + i;
-      }
-
-      // Notify all clients
-      ws.textAll(String(num));
-
-      // Value to pass on the motor
-      analogWrite(clawPinLed, map(num, 0, 100, 0, 255));
-    }
-
-    if (strcmp((char*)data, "forward") == 0) {
-      // Move forward
-      digitalWrite(ledPins[0], HIGH);
-    }
-
-    if (strcmp((char*)data, "backward") == 0) {
-      // Move backward
-      digitalWrite(ledPins[1], HIGH);
-    }
-
-    if (strcmp((char*)data, "left") == 0) {
-      // Move left
-      digitalWrite(ledPins[2], HIGH);
+    // Test if parsing succeeds
+    if (error) {
+      Serial.print(F("deserializeJson failed: "));
+      Serial.println(error.f_str());
       return;
     }
 
-    if (strcmp((char*)data, "right") == 0) {
-      // Move right
-      digitalWrite(ledPins[3], HIGH);
+    // Set values
+    if (!doc["move"].isNull()) {
+      x = doc["move"]["x"];
+      y = doc["move"]["y"];
     }
 
-    if (strcmp((char*)data, "stop") == 0) {
-      // Stop
-      digitalWrite(ledPins[0], LOW);
-      digitalWrite(ledPins[1], LOW);
-      digitalWrite(ledPins[2], LOW);
-      digitalWrite(ledPins[3], LOW);
+    if (!doc["speed"].isNull()) {
+      speedValue = doc["speed"];
     }
+
+    if (!doc["claw"].isNull()) {
+      clawValue = doc["claw"];
+    }
+
+    // Print values
+    Serial.print(x);
+    Serial.print(" ");
+    Serial.println(y);
+    Serial.print("speed=");
+    Serial.println(speedValue);
+    Serial.print("claw=");
+    Serial.println(clawValue);
+
+    // Send value back to application
+    String msg;
+    serializeJson(doc, msg);
+    ws.textAll(msg);
   }
 }
 
@@ -125,12 +110,6 @@ void setup() {
   Serial.println(IP);
 
   // Pins and initializations
-  pinMode(clawPinLed, OUTPUT);
-  digitalWrite(clawPinLed, LOW);
-  for (int i : ledPins) {
-    pinMode(i, OUTPUT);
-    digitalWrite(i, LOW);
-  }
 
   initWebSocket();
 

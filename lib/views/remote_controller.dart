@@ -42,10 +42,12 @@ class _RemoteControllerState extends State<RemoteController> {
 
   // Car speed and car claw
   int _prevSpeedValue = 0;
+  // ignore: prefer_final_fields
   double _speedValue = 0;
 
   int _prevClawValue = 0;
-  double _clawValue = 0; // ignore: prefer_final_fields
+  // ignore: prefer_final_fields
+  double _clawValue = 0;
 
   // Send message to server
   void send(String? message) {
@@ -108,10 +110,6 @@ class _RemoteControllerState extends State<RemoteController> {
                           _y = newY;
                         });
 
-                        if (kDebugMode) {
-                          print("x=$_x, y=$_y");
-                        }
-
                         // Sends to NodeMCU
                         send(jsonEncode(
                           {
@@ -131,105 +129,102 @@ class _RemoteControllerState extends State<RemoteController> {
           Expanded(
             child: Container(
               color: Colors.grey[300],
-              child: Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        StreamBuilder(
-                          initialData: "0",
-                          stream: _channel?.stream,
-                          builder: ((context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const CircularProgressIndicator();
-                            }
+              child: StreamBuilder(
+                initialData: "0",
+                stream: _channel?.stream,
+                builder: ((context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const CircularProgressIndicator();
+                  }
 
-                            final double val = double.parse(snapshot.data);
-                            _speedValue = val;
+                  // Updates slider value from nodemcu response
+                  final dynamic decoded = jsonDecode(snapshot.data);
+                  if (decoded is Map<String, dynamic>) {
+                    // Assigns values
+                    if (decoded.containsKey("speed")) {
+                      final int speedInt = decoded["speed"];
+                      _speedValue = speedInt.toDouble();
+                    }
 
-                            return SfSlider.vertical(
-                              min: 0,
-                              max: 100,
-                              value: _speedValue,
-                              interval: 25,
-                              showLabels: true,
-                              showDividers: true,
-                              showTicks: true,
-                              onChanged: (newValue) {
-                                final int num = newValue.toInt();
-                                if (num != _prevSpeedValue) {
-                                  // Sends to NodeMCU
-                                  send(jsonEncode(
-                                    {
-                                      "speed": num,
-                                    },
-                                  ));
-                                  _prevSpeedValue = num;
-                                }
-                              },
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 10.0),
-                        const Text(
-                          'Speed',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                    if (decoded.containsKey("claw")) {
+                      final int clawInt = decoded["claw"];
+                      _clawValue = clawInt.toDouble();
+                    }
+                  }
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SfSlider.vertical(
+                            min: 0,
+                            max: 100,
+                            value: _speedValue,
+                            interval: 25,
+                            showLabels: true,
+                            showDividers: true,
+                            showTicks: true,
+                            onChanged: (newValue) {
+                              final int num = newValue.toInt();
+                              if (num != _prevSpeedValue) {
+                                // Sends to NodeMCU
+                                send(jsonEncode(
+                                  {
+                                    "speed": num,
+                                  },
+                                ));
+                                _prevSpeedValue = num;
+                              }
+                            },
                           ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        StreamBuilder(
-                          initialData: "0",
-                          stream: _channel?.stream,
-                          builder: ((context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const CircularProgressIndicator();
-                            }
-
-                            final double val = double.parse(snapshot.data);
-                            _speedValue = val;
-
-                            return SfSlider.vertical(
-                              min: 0,
-                              max: 100,
-                              value: _clawValue,
-                              interval: 25,
-                              showLabels: true,
-                              showDividers: true,
-                              showTicks: true,
-                              onChanged: (newValue) {
-                                final int num = newValue.toInt();
-                                if (num != _prevClawValue) {
-                                  send(jsonEncode(
-                                    {
-                                      "claw": num,
-                                    },
-                                  ));
-                                  _prevClawValue = num;
-                                }
-                              },
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 10.0),
-                        const Text(
-                          'Claw',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                          const SizedBox(height: 10.0),
+                          const Text(
+                            'Speed',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                        ],
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SfSlider.vertical(
+                            min: 0,
+                            max: 100,
+                            value: _clawValue,
+                            interval: 25,
+                            showLabels: true,
+                            showDividers: true,
+                            showTicks: true,
+                            onChanged: (newValue) {
+                              final int num = newValue.toInt();
+                              if (num != _prevClawValue) {
+                                send(jsonEncode(
+                                  {
+                                    "claw": num,
+                                  },
+                                ));
+                                _prevClawValue = num;
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 10.0),
+                          const Text(
+                            'Claw',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                }),
               ),
             ),
           ),
