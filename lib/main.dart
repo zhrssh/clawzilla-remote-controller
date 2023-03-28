@@ -5,6 +5,7 @@ import 'package:network_info_plus/network_info_plus.dart';
 
 // Routes
 import './views/remote_controller.dart';
+import './views/remote_controller_v2.dart';
 
 void main() {
   runApp(const MyApp());
@@ -77,7 +78,7 @@ class _MyHomePageState extends State<MyHomePage> {
         Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => RemoteController(channel: channel)))
+                    builder: (context) => RemoteControllerV2(channel: channel)))
             .then((value) => Navigator.of(context).pop());
         return;
       },

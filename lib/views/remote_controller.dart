@@ -110,15 +110,51 @@ class _RemoteControllerState extends State<RemoteController> {
                           _y = newY;
                         });
 
-                        // Sends to NodeMCU
-                        send(jsonEncode(
-                          {
-                            "move": {
-                              "x": _x,
-                              "y": _y,
-                            }
-                          },
-                        ));
+                        // Sends command
+                        // Move Forward
+                        if (_x == 0 && _y == -1) {
+                          send("N");
+                        }
+
+                        // Move Forward & Right
+                        if (_x == 1 && _y == -1) {
+                          send("NE");
+                        }
+
+                        // Move Right
+                        if (_x == 1 && _y == 0) {
+                          send("E");
+                        }
+
+                        // Move Back & Right
+                        if (_x == 1 && _y == 1) {
+                          send("SE");
+                        }
+
+                        // Move Back
+                        if (_x == 0 && _y == 1) {
+                          send("S");
+                        }
+
+                        // Move Back & Left
+                        if (_x == -1 && _y == 1) {
+                          send("SW");
+                        }
+
+                        // Move Left
+                        if (_x == -1 && _y == 0) {
+                          send("W");
+                        }
+
+                        // Move Forward and Left
+                        if (_x == -1 && _y == -1) {
+                          send("NW");
+                        }
+
+                        // Stop
+                        if (_x == 0 && _y == 0) {
+                          send("STOP");
+                        }
                       },
                     ),
                   ),
@@ -138,18 +174,17 @@ class _RemoteControllerState extends State<RemoteController> {
                   }
 
                   // Updates slider value from nodemcu response
-                  final dynamic decoded = jsonDecode(snapshot.data);
-                  if (decoded is Map<String, dynamic>) {
-                    // Assigns values
-                    if (decoded.containsKey("speed")) {
-                      final int speedInt = decoded["speed"];
-                      _speedValue = speedInt.toDouble();
-                    }
+                  final String string = snapshot.data;
+                  final splitted = string.split("/");
 
-                    if (decoded.containsKey("claw")) {
-                      final int clawInt = decoded["claw"];
-                      _clawValue = clawInt.toDouble();
-                    }
+                  if (splitted[0].compareTo("speed") == 0) {
+                    final double val = double.parse(splitted[1]);
+                    _speedValue = val;
+                  }
+
+                  if (splitted[0].compareTo("claw") == 0) {
+                    final double val = double.parse(splitted[1]);
+                    _clawValue = val;
                   }
 
                   return Row(
@@ -163,6 +198,7 @@ class _RemoteControllerState extends State<RemoteController> {
                             max: 100,
                             value: _speedValue,
                             interval: 25,
+                            stepSize: 10,
                             showLabels: true,
                             showDividers: true,
                             showTicks: true,
@@ -170,11 +206,7 @@ class _RemoteControllerState extends State<RemoteController> {
                               final int num = newValue.toInt();
                               if (num != _prevSpeedValue) {
                                 // Sends to NodeMCU
-                                send(jsonEncode(
-                                  {
-                                    "speed": num,
-                                  },
-                                ));
+                                send("speed/$num");
                                 _prevSpeedValue = num;
                               }
                             },
@@ -197,17 +229,14 @@ class _RemoteControllerState extends State<RemoteController> {
                             max: 100,
                             value: _clawValue,
                             interval: 25,
+                            stepSize: 10,
                             showLabels: true,
                             showDividers: true,
                             showTicks: true,
                             onChanged: (newValue) {
                               final int num = newValue.toInt();
                               if (num != _prevClawValue) {
-                                send(jsonEncode(
-                                  {
-                                    "claw": num,
-                                  },
-                                ));
+                                send("claw/$num");
                                 _prevClawValue = num;
                               }
                             },
